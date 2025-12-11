@@ -58,7 +58,7 @@ open-code: base
 		$(CACHE_FLAG) \
 		$(CACHE_FROM_FLAG) \
 		-t open-code \
-		-f open-code/Dockerfile claude-code
+		-f open-code/Dockerfile open-code
 
 clean:
 	@echo "Removing container images"
