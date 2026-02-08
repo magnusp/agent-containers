@@ -1,4 +1,5 @@
-FROM node:23-slim
+# 24-slim
+FROM node@sha256:4660b1ca8b28d6d1906fd644abe34b2ed81d15434d26d845ef0aced307cf4b6f
 
 ARG HOST_UID=1000
 ARG HOST_GID=1000
@@ -12,16 +13,10 @@ RUN apt-get update && \
 
 # Install Bun by copying from the official image
 # This installs bun globally to /usr/local/bin so it is available to everyone
-COPY --from=oven/bun:1 /usr/local/bin/bun /usr/local/bin/bun
+# v1.3.9
+COPY --from=oven/bun@sha256:856da45d07aeb62eb38ea3e7f9e1794c0143a4ff63efb00e6c4491b627e2a521 /usr/local/bin/bun /usr/local/bin/bun 
 # Create the bunx symlink (standard practice)
 RUN ln -s /usr/local/bin/bun /usr/local/bin/bunx
-
-# Install tod (One Dev CLI / MCP binary)
-COPY bin/tod /usr/local/bin/tod
-RUN chmod +x /usr/local/bin/tod
-
-# Install Playwright system dependencies for Chromium (required by agent-browser)
-RUN npx playwright install-deps chromium
 
 # 2. Configure the existing 'node' user
 # The node image usually creates the node user. We ensure it owns the app dir.
@@ -45,11 +40,6 @@ RUN mkdir -p /home/node/.npm-global && \
   mkdir -p /home/node/.config && \
   mkdir -p /home/node/.local && \
   mkdir -p /home/node/.bun/bin
-
-# 5. Install agent-browser (headless browser automation CLI for AI agents)
-# Downloads Chromium browser to user's cache
-RUN npm install -g agent-browser && \
-  agent-browser install
 
 # 6. Bash Configuration
 # Add the path export to bashrc so interactive shells pick it up
