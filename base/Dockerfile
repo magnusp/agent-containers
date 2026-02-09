@@ -4,7 +4,7 @@ FROM node@sha256:4660b1ca8b28d6d1906fd644abe34b2ed81d15434d26d845ef0aced307cf4b6
 ARG HOST_UID=1000
 ARG HOST_GID=1000
 # Combine all tools here. Note: added specific tools you listed for runtime
-ARG LOCAL_TOOLS="git curl jq ripgrep vim nano make zip unzip ssh-client wget tree imagemagick ca-certificates gnupg procps"
+ARG LOCAL_TOOLS="git curl jq ripgrep vim nano make zip unzip openssh-client wget tree imagemagick ca-certificates gnupg procps"
 
 # 1. Install System Dependencies (as root)
 RUN apt-get update && \
