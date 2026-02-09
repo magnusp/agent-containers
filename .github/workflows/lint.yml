@@ -30,11 +30,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Scan base/Dockerfile
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: base/Dockerfile
       - name: Scan open-code/Dockerfile
-        uses: hadolint/hadolint-action@v3.1.0
+        uses: hadolint/hadolint-action@v3.3.0
         with:
           dockerfile: open-code/Dockerfile
 
