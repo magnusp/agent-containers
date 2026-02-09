@@ -50,12 +50,7 @@ services:
     command: ["opencode", "web", "--port", "${OPENCODE_PORT:-4096}", "--hostname", "0.0.0.0"]
     ports:
       - "${OPENCODE_PORT:-4096}:${OPENCODE_PORT:-4096}"
-    healthcheck:
-      test: ["CMD", "curl", "-sf", "http://localhost:${OPENCODE_PORT:-4096}"]
-      interval: 2s
-      timeout: 3s
-      retries: 15
-      start_period: 5s
+
     restart: "no"
     depends_on:
       opencode-init:
@@ -66,7 +61,4 @@ services:
     command: ["opencode", "attach", "http://opencode-web:${OPENCODE_PORT:-4096}"]
     stdin_open: true
     tty: true
-    depends_on:
-      opencode-web:
-        condition: service_healthy
     restart: "no"
