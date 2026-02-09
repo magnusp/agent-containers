@@ -16,7 +16,7 @@ extending the `LOCAL_TOOLS` list in the top-level `Makefile`.
 
 ### Option 1: Compose stack (Web + TUI)
 
-This launches two containers — a headless web server and an interactive TUI that attaches to it. The web UI is also accessible from your browser at `http://localhost:4096`. Exiting the TUI automatically tears down the entire stack.
+This launches a short-lived init container (to ensure directory permissions) followed by two main containers — a headless web server and an interactive TUI that attaches to it. The web UI is also accessible from your browser at `http://localhost:4096`. Exiting the TUI automatically tears down the entire stack.
 
 **Prerequisites:**
 
@@ -46,7 +46,7 @@ cd /path/to/your/project
 | Command | Description |
 |---------|-------------|
 | `opencode` or `opencode up` | Launch the stack (default) |
-| `opencode down` | Tear down a running stack (run from the same project dir) |
+| `opencode down` or `opencode stop` | Tear down a running stack (run from the same project dir) |
 | `opencode logs` | Tail web server logs |
 | `opencode status` | Show running containers |
 
@@ -79,10 +79,10 @@ opencode status
 
 **What happens:**
 - Your current working directory is mounted as `/app` inside both containers
-- Three host directories are bind-mounted for persistent state across runs:
-  - `~/.config/opencode` — user config, agents, commands, themes, plugins
-  - `~/.local/state/opencode` — UI state, command history, model preferences
-  - `~/.local/share/opencode` — auth tokens, sessions, LSP servers, git snapshots, logs
+- Three host directories are bind-mounted for persistent state across runs (respects `$XDG_CONFIG_HOME`, `$XDG_STATE_HOME`, `$XDG_DATA_HOME` if set):
+  - `$XDG_CONFIG_HOME/opencode` (default: `~/.config/opencode`) — user config, agents, commands, themes, plugins
+  - `$XDG_STATE_HOME/opencode` (default: `~/.local/state/opencode`) — UI state, command history, model preferences
+  - `$XDG_DATA_HOME/opencode` (default: `~/.local/share/opencode`) — auth tokens, sessions, LSP servers, git snapshots, logs
 - The web server binds to `0.0.0.0:4096` inside the container (or `$OPENCODE_PORT`), published to the same port on the host
 - `host.docker.internal` is mapped so containers can reach services on your host machine
 
@@ -103,12 +103,19 @@ For a simpler single-container setup without the web UI:
 PROJ="$(basename "$(pwd)")"
 NAME="open-code-${PROJ}"
 
+# Respect XDG base directories
+OC_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+OC_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/opencode"
+OC_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/opencode"
+
+mkdir -p "${OC_CONFIG}" "${OC_STATE}" "${OC_DATA}"
+
 exec docker run --rm --tty --interactive \
   --name "$NAME" \
   --add-host=host.docker.internal:host-gateway \
-  -v "$HOME/.local/state/opencode:/home/node/.local/state/opencode" \
-  -v "$HOME/.local/share/opencode:/home/node/.local/share/opencode" \
-  -v "$HOME/.config/opencode:/home/node/.config/opencode" \
+  -v "${OC_STATE}:/home/node/.local/state/opencode" \
+  -v "${OC_DATA}:/home/node/.local/share/opencode" \
+  -v "${OC_CONFIG}:/home/node/.config/opencode" \
   -v "$(pwd):/app:rw" \
   open-code "$@"
 ```
@@ -116,4 +123,4 @@ exec docker run --rm --tty --interactive \
 ## References
 
 * [Documentation](https://opencode.ai/docs)
-* [Github Repo](https://github.com/sst/opencode)
+* [Github Repo](https://github.com/anomalyco/opencode)

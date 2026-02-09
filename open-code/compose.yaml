@@ -6,6 +6,8 @@
 # Usage: use the 'opencode' helper script from any directory.
 # Direct: PROJECT_DIR=/path/to/project docker compose -f compose.yaml up -d --wait opencode-web
 #         docker compose -f compose.yaml run --rm opencode-tui
+# Note:   OPENCODE_CONFIG_DIR_HOST, OPENCODE_STATE_DIR_HOST, OPENCODE_DATA_DIR_HOST
+#         can override the default XDG-based bind mount paths.
 
 x-common: &common
   image: open-code
