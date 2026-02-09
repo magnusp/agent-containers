@@ -1,0 +1,142 @@
+#!/usr/bin/env bash
+#
+# Launch the OpenCode web + TUI compose stack.
+# Run from any directory — the current working directory is mounted as /app.
+#
+# Usage:
+#   opencode            # launch the stack (web server + interactive TUI)
+#   opencode down       # tear down a running stack (run from same project dir)
+#   opencode logs       # tail logs from the web server
+#   opencode status     # show running containers
+#
+set -euo pipefail
+
+# Resolve the directory where this script (and compose.yaml) lives,
+# following symlinks so it works when symlinked into $PATH.
+SCRIPT_DIR="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+COMPOSE_FILE="${SCRIPT_DIR}/compose.yaml"
+
+if [[ ! -f "${COMPOSE_FILE}" ]]; then
+  echo "Error: compose.yaml not found at ${COMPOSE_FILE}" >&2
+  exit 1
+fi
+
+# Derive a unique compose project name from the current directory.
+# This allows running multiple stacks for different projects simultaneously.
+PROJECT_NAME="opencode-$(basename "$(pwd)")"
+export COMPOSE_PROJECT_NAME="${PROJECT_NAME}"
+
+# Set PROJECT_DIR for compose interpolation (suppresses warnings for non-up commands)
+export PROJECT_DIR
+PROJECT_DIR="$(pwd)"
+
+export OPENCODE_PORT
+OPENCODE_PORT="${OPENCODE_PORT:-4096}"
+
+# Resolve XDG base directories (respect user overrides, fall back to XDG defaults)
+export OPENCODE_CONFIG_DIR_HOST
+OPENCODE_CONFIG_DIR_HOST="${XDG_CONFIG_HOME:-${HOME}/.config}/opencode"
+export OPENCODE_STATE_DIR_HOST
+OPENCODE_STATE_DIR_HOST="${XDG_STATE_HOME:-${HOME}/.local/state}/opencode"
+export OPENCODE_DATA_DIR_HOST
+OPENCODE_DATA_DIR_HOST="${XDG_DATA_HOME:-${HOME}/.local/share}/opencode"
+
+COMMAND="${1:-up}"
+
+case "${COMMAND}" in
+  down|stop)
+    echo "Tearing down ${PROJECT_NAME}..."
+    docker compose -f "${COMPOSE_FILE}" down
+    exit 0
+    ;;
+  logs)
+    shift
+    if [[ $# -eq 0 ]]; then
+      docker compose -f "${COMPOSE_FILE}" logs --follow opencode-web
+    else
+      docker compose -f "${COMPOSE_FILE}" logs "$@" opencode-web
+    fi
+    exit 0
+    ;;
+  status|ps)
+    docker compose -f "${COMPOSE_FILE}" ps
+    exit 0
+    ;;
+  up)
+    ;; # fall through to main logic below
+  *)
+    echo "Unknown command: ${COMMAND}" >&2
+    echo "Usage: opencode [up|down|logs|status]" >&2
+    exit 1
+    ;;
+esac
+
+# Ensure the host directories exist with correct ownership
+mkdir -p "${OPENCODE_CONFIG_DIR_HOST}" "${OPENCODE_STATE_DIR_HOST}" "${OPENCODE_DATA_DIR_HOST}"
+
+# Export build args for compose
+export HOST_UID HOST_GID
+HOST_UID="$(id -u)"
+HOST_GID="$(id -g)"
+
+# Compute SHA256 of base Dockerfile to detect changes
+BASE_DOCKERFILE="${SCRIPT_DIR}/../base/Dockerfile"
+DOCKERFILE_SHA=$(sha256sum "${BASE_DOCKERFILE}" | cut -d' ' -f1)
+
+# Check if base image exists and has matching SHA label
+NEEDS_BUILD=false
+if docker image inspect agent-base >/dev/null 2>&1; then
+  CURRENT_SHA=$(docker image inspect agent-base --format '{{index .Config.Labels "dockerfile.sha256"}}' 2>/dev/null || echo "")
+  if [[ "${CURRENT_SHA}" != "${DOCKERFILE_SHA}" ]]; then
+    NEEDS_BUILD=true
+  fi
+else
+  NEEDS_BUILD=true
+fi
+
+# Build base image only if Dockerfile has changed or image doesn't exist
+if [[ "${NEEDS_BUILD}" == "true" ]]; then
+  docker build -q \
+    --build-arg HOST_UID="${HOST_UID}" \
+    --build-arg HOST_GID="${HOST_GID}" \
+    --label "dockerfile.sha256=${DOCKERFILE_SHA}" \
+    -t agent-base \
+    -f "${BASE_DOCKERFILE}" "${SCRIPT_DIR}/../base" >/dev/null
+fi
+
+# Track whether cleanup has been performed to avoid double teardown
+CLEANED_UP=false
+
+cleanup() {
+  if [[ "${CLEANED_UP}" == "true" ]]; then
+    return
+  fi
+  CLEANED_UP=true
+  echo ""
+  echo "Tearing down ${PROJECT_NAME} in the background..."
+  docker compose -f "${COMPOSE_FILE}" down &>/dev/null &
+  disown
+}
+trap cleanup EXIT
+
+echo "Project:  ${PROJECT_DIR}"
+echo "Stack:    ${PROJECT_NAME}"
+echo "Web UI:   http://localhost:${OPENCODE_PORT}"
+echo ""
+
+# Wait for any previous teardown to complete (network cleanup race condition)
+NETWORK_NAME="${PROJECT_NAME}_default"
+for i in {1..20}; do
+  if docker network inspect "${NETWORK_NAME}" >/dev/null 2>&1; then
+    # Network still exists from previous teardown, wait for it to be removed
+    sleep 0.1
+  else
+    break
+  fi
+done
+
+# Start the web server detached and wait for it to be healthy
+docker compose -f "${COMPOSE_FILE}" up -d --build --wait opencode-web
+
+# Run the TUI interactively — this blocks until the user exits
+docker compose -f "${COMPOSE_FILE}" run --rm opencode-tui

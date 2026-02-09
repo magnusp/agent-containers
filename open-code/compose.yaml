@@ -1,0 +1,64 @@
+# OpenCode Web + TUI compose stack
+#
+# The helper script starts the web server detached, then runs the TUI
+# interactively. Exiting the TUI triggers a cleanup that tears down the stack.
+#
+# Usage: use the 'opencode' helper script from any directory.
+# Direct: PROJECT_DIR=/path/to/project docker compose -f compose.yaml up -d --wait opencode-web
+#         docker compose -f compose.yaml run --rm opencode-tui
+# Note:   OPENCODE_CONFIG_DIR_HOST, OPENCODE_STATE_DIR_HOST, OPENCODE_DATA_DIR_HOST
+#         can override the default XDG-based bind mount paths.
+
+x-common: &common
+  build:
+    context: ..
+    dockerfile: open-code/Dockerfile
+    args:
+      - HOST_UID=${HOST_UID:-1000}
+      - HOST_GID=${HOST_GID:-1000}
+  image: open-code
+  volumes:
+    - ${PROJECT_DIR:-.}:/app:rw
+    - ${OPENCODE_CONFIG_DIR_HOST:-${HOME}/.config/opencode}:/home/node/.config/opencode
+    - ${OPENCODE_STATE_DIR_HOST:-${HOME}/.local/state/opencode}:/home/node/.local/state/opencode
+    - ${OPENCODE_DATA_DIR_HOST:-${HOME}/.local/share/opencode}:/home/node/.local/share/opencode
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+services:
+  # Safety net: ensures bind-mount directories exist with correct ownership
+  # when compose is invoked directly without the helper script.
+  opencode-init:
+    build:
+      context: ..
+      dockerfile: open-code/Dockerfile
+      args:
+        - HOST_UID=${HOST_UID:-1000}
+        - HOST_GID=${HOST_GID:-1000}
+    image: open-code
+    user: root
+    command: >
+      sh -c "mkdir -p /home/node/.config/opencode /home/node/.local/state/opencode /home/node/.local/share/opencode &&
+             chown node:node /home/node/.config/opencode /home/node/.local/state/opencode /home/node/.local/share/opencode"
+    volumes:
+      - ${OPENCODE_CONFIG_DIR_HOST:-${HOME}/.config/opencode}:/home/node/.config/opencode
+      - ${OPENCODE_STATE_DIR_HOST:-${HOME}/.local/state/opencode}:/home/node/.local/state/opencode
+      - ${OPENCODE_DATA_DIR_HOST:-${HOME}/.local/share/opencode}:/home/node/.local/share/opencode
+
+  opencode-web:
+    <<: *common
+    command: ["opencode", "web", "--port", "${OPENCODE_PORT:-4096}", "--hostname", "0.0.0.0"]
+    ports:
+      - "${OPENCODE_PORT:-4096}:${OPENCODE_PORT:-4096}"
+    stop_grace_period: 2s
+    restart: "no"
+    depends_on:
+      opencode-init:
+        condition: service_completed_successfully
+
+  opencode-tui:
+    <<: *common
+    command: ["opencode", "attach", "http://opencode-web:${OPENCODE_PORT:-4096}"]
+    stdin_open: true
+    tty: true
+    restart: "no"

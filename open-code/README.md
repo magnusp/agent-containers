@@ -13,14 +13,87 @@ You can add more local tools to the container to be installed via `apt-get` by
 extending the `LOCAL_TOOLS` list in the top-level `Makefile`.
 
 ## Run Instructions
-- Just create the following file, make it executable with `chmod +x` and place it in `~/.local/bin`
-- Startup is a bit slow due to container startup time, but taking ~5s startup penalty for safety measures is not so bad.
-- I also add the host mapping to host.docker.internal so the container can access your localhost (useful for the agent-browser or similar MCPs to access your apps running on localhost)
-- There are 4 volumes, make sure the directories in your $HOME exist and with the correct user privilege (your $UID):
-  1. opencode global state - UI state, command history, model preferences, recently opened files
-  2. opencode global share - Auth tokens, session data, LSP servers, git snapshots for undo, logs
-  3. opencode global config - User configuration: themes, keybindings, custom commands, plugins 
-  3. the repo you work - mounted as current PWD when executing `opencode` in your terminal
+
+### Option 1: Compose stack (Web + TUI)
+
+This launches a short-lived init container (to ensure directory permissions) followed by two main containers — a headless web server and an interactive TUI that attaches to it. The web UI is also accessible from your browser at `http://localhost:4096`. Exiting the TUI automatically tears down the entire stack.
+
+**Prerequisites:**
+
+The helper script automatically builds the base and open-code images on first run. No manual `make` step is required.
+If you prefer to pre-build, you can still run `make open-code`.
+
+**Usage:**
+
+Symlink or copy `open-code/opencode` into your `$PATH` (e.g. `~/.local/bin/`), then run from any project directory:
+
+```bash
+cd /path/to/your/project
+opencode
+```
+
+Or invoke the script directly:
+
+```bash
+cd /path/to/your/project
+/path/to/agent-containers/open-code/opencode
+```
+
+**Subcommands:**
+
+| Command | Description |
+|---------|-------------|
+| `opencode` or `opencode up` | Launch the stack (default) |
+| `opencode down` or `opencode stop` | Tear down a running stack (run from the same project dir) |
+| `opencode logs` | Tail web server logs |
+| `opencode status` | Show running containers |
+
+**Custom port:**
+
+```bash
+OPENCODE_PORT=8080 opencode
+```
+
+**Running multiple projects:**
+
+Each project directory gets its own isolated compose stack (named `opencode-<dirname>`). To run multiple projects simultaneously, use different ports:
+
+```bash
+# Terminal 1
+cd ~/projects/frontend
+opencode
+
+# Terminal 2
+cd ~/projects/backend
+OPENCODE_PORT=4097 opencode
+```
+
+Subcommands like `down`, `logs`, and `status` are scoped to the current directory, so run them from the same project directory:
+
+```bash
+cd ~/projects/frontend
+opencode status
+```
+
+**What happens:**
+- Your current working directory is mounted as `/app` inside both containers
+- Three host directories are bind-mounted for persistent state across runs (respects `$XDG_CONFIG_HOME`, `$XDG_STATE_HOME`, `$XDG_DATA_HOME` if set):
+  - `$XDG_CONFIG_HOME/opencode` (default: `~/.config/opencode`) — user config, agents, commands, themes, plugins
+  - `$XDG_STATE_HOME/opencode` (default: `~/.local/state/opencode`) — UI state, command history, model preferences
+  - `$XDG_DATA_HOME/opencode` (default: `~/.local/share/opencode`) — auth tokens, sessions, LSP servers, git snapshots, logs
+- The web server binds to `0.0.0.0:4096` inside the container (or `$OPENCODE_PORT`), published to the same port on the host
+- `host.docker.internal` is mapped so containers can reach services on your host machine
+
+### Option 2: Single container (standalone)
+
+For a simpler single-container setup without the web UI:
+
+- Create the following file, make it executable with `chmod +x` and place it in `~/.local/bin`
+- There are 4 volumes — make sure the directories in your `$HOME` exist and with the correct user privilege (your `$UID`):
+  1. opencode global state — UI state, command history, model preferences, recently opened files
+  2. opencode global share — Auth tokens, session data, LSP servers, git snapshots for undo, logs
+  3. opencode global config — User configuration: themes, keybindings, custom commands, plugins
+  4. the repo you work on — mounted as current PWD when executing `opencode` in your terminal
 
 ```bash
 #!/usr/bin/env bash
@@ -28,12 +101,19 @@ extending the `LOCAL_TOOLS` list in the top-level `Makefile`.
 PROJ="$(basename "$(pwd)")"
 NAME="open-code-${PROJ}"
 
+# Respect XDG base directories
+OC_CONFIG="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
+OC_STATE="${XDG_STATE_HOME:-$HOME/.local/state}/opencode"
+OC_DATA="${XDG_DATA_HOME:-$HOME/.local/share}/opencode"
+
+mkdir -p "${OC_CONFIG}" "${OC_STATE}" "${OC_DATA}"
+
 exec docker run --rm --tty --interactive \
   --name "$NAME" \
   --add-host=host.docker.internal:host-gateway \
-  -v "$HOME/.local/state/opencode:/home/node/.local/state/opencode" \
-  -v "$HOME/.local/share/opencode:/home/node/.local/share/opencode" \
-  -v "$HOME/.config/opencode:/home/node/.config/opencode" \
+  -v "${OC_STATE}:/home/node/.local/state/opencode" \
+  -v "${OC_DATA}:/home/node/.local/share/opencode" \
+  -v "${OC_CONFIG}:/home/node/.config/opencode" \
   -v "$(pwd):/app:rw" \
   open-code "$@"
 ```
@@ -41,4 +121,4 @@ exec docker run --rm --tty --interactive \
 ## References
 
 * [Documentation](https://opencode.ai/docs)
-* [Github Repo](https://github.com/sst/opencode)
+* [Github Repo](https://github.com/anomalyco/opencode)
