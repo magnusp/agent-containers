@@ -10,6 +10,12 @@
 #         can override the default XDG-based bind mount paths.
 
 x-common: &common
+  build:
+    context: ..
+    dockerfile: open-code/Dockerfile
+    args:
+      - HOST_UID=${HOST_UID:-1000}
+      - HOST_GID=${HOST_GID:-1000}
   image: open-code
   volumes:
     - ${PROJECT_DIR:-.}:/app:rw
@@ -23,6 +29,12 @@ services:
   # Safety net: ensures bind-mount directories exist with correct ownership
   # when compose is invoked directly without the helper script.
   opencode-init:
+    build:
+      context: ..
+      dockerfile: open-code/Dockerfile
+      args:
+        - HOST_UID=${HOST_UID:-1000}
+        - HOST_GID=${HOST_GID:-1000}
     image: open-code
     user: root
     command: >

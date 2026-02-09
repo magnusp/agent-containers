@@ -20,10 +20,8 @@ This launches a short-lived init container (to ensure directory permissions) fol
 
 **Prerequisites:**
 
-```bash
-# Build the image (one-time)
-make open-code
-```
+The helper script automatically builds the base and open-code images on first run. No manual `make` step is required.
+If you prefer to pre-build, you can still run `make open-code`.
 
 **Usage:**
 
