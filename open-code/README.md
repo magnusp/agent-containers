@@ -79,7 +79,10 @@ opencode status
 
 **What happens:**
 - Your current working directory is mounted as `/app` inside both containers
-- The `opencode-config` volume persists all opencode data across runs (config, state, auth tokens, session data, LSP servers, logs) via XDG environment variable redirection
+- Three host directories are bind-mounted for persistent state across runs:
+  - `~/.config/opencode` — user config, agents, commands, themes, plugins
+  - `~/.local/state/opencode` — UI state, command history, model preferences
+  - `~/.local/share/opencode` — auth tokens, sessions, LSP servers, git snapshots, logs
 - The web server binds to `0.0.0.0:4096` inside the container (or `$OPENCODE_PORT`), published to the same port on the host
 - `host.docker.internal` is mapped so containers can reach services on your host machine
 

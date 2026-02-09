@@ -33,6 +33,14 @@ PROJECT_DIR="$(pwd)"
 export OPENCODE_PORT
 OPENCODE_PORT="${OPENCODE_PORT:-4096}"
 
+# Resolve XDG base directories (respect user overrides, fall back to XDG defaults)
+export OPENCODE_CONFIG_DIR_HOST
+OPENCODE_CONFIG_DIR_HOST="${XDG_CONFIG_HOME:-${HOME}/.config}/opencode"
+export OPENCODE_STATE_DIR_HOST
+OPENCODE_STATE_DIR_HOST="${XDG_STATE_HOME:-${HOME}/.local/state}/opencode"
+export OPENCODE_DATA_DIR_HOST
+OPENCODE_DATA_DIR_HOST="${XDG_DATA_HOME:-${HOME}/.local/share}/opencode"
+
 COMMAND="${1:-up}"
 
 case "${COMMAND}" in
@@ -63,8 +71,8 @@ case "${COMMAND}" in
     ;;
 esac
 
-# Ensure the external volume exists (idempotent)
-docker volume create opencode-config >/dev/null 2>&1 || true
+# Ensure the host directories exist with correct ownership
+mkdir -p "${OPENCODE_CONFIG_DIR_HOST}" "${OPENCODE_STATE_DIR_HOST}" "${OPENCODE_DATA_DIR_HOST}"
 
 # Track whether cleanup has been performed to avoid double teardown
 CLEANED_UP=false

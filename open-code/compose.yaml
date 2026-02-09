@@ -11,24 +11,25 @@ x-common: &common
   image: open-code
   volumes:
     - ${PROJECT_DIR:-.}:/app:rw
-    - opencode-config:/home/node/.opencode
-  environment:
-    - XDG_CONFIG_HOME=/home/node/.opencode/config
-    - XDG_STATE_HOME=/home/node/.opencode/state
-    - XDG_DATA_HOME=/home/node/.opencode/data
+    - ${OPENCODE_CONFIG_DIR_HOST:-${HOME}/.config/opencode}:/home/node/.config/opencode
+    - ${OPENCODE_STATE_DIR_HOST:-${HOME}/.local/state/opencode}:/home/node/.local/state/opencode
+    - ${OPENCODE_DATA_DIR_HOST:-${HOME}/.local/share/opencode}:/home/node/.local/share/opencode
   extra_hosts:
     - "host.docker.internal:host-gateway"
 
 services:
-  # Ensures volume subdirectories exist with correct ownership on first run
+  # Safety net: ensures bind-mount directories exist with correct ownership
+  # when compose is invoked directly without the helper script.
   opencode-init:
     image: open-code
     user: root
     command: >
-      sh -c "mkdir -p /home/node/.opencode/config /home/node/.opencode/state /home/node/.opencode/data &&
-             chown node:node /home/node/.opencode /home/node/.opencode/config /home/node/.opencode/state /home/node/.opencode/data"
+      sh -c "mkdir -p /home/node/.config/opencode /home/node/.local/state/opencode /home/node/.local/share/opencode &&
+             chown node:node /home/node/.config/opencode /home/node/.local/state/opencode /home/node/.local/share/opencode"
     volumes:
-      - opencode-config:/home/node/.opencode
+      - ${OPENCODE_CONFIG_DIR_HOST:-${HOME}/.config/opencode}:/home/node/.config/opencode
+      - ${OPENCODE_STATE_DIR_HOST:-${HOME}/.local/state/opencode}:/home/node/.local/state/opencode
+      - ${OPENCODE_DATA_DIR_HOST:-${HOME}/.local/share/opencode}:/home/node/.local/share/opencode
 
   opencode-web:
     <<: *common
@@ -55,7 +56,3 @@ services:
       opencode-web:
         condition: service_healthy
     restart: "no"
-
-volumes:
-  opencode-config:
-    external: true
