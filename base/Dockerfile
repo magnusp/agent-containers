@@ -7,6 +7,7 @@ ARG HOST_GID=1000
 ARG LOCAL_TOOLS="git curl jq ripgrep vim nano make zip unzip openssh-client wget tree imagemagick ca-certificates gnupg procps"
 
 # 1. Install System Dependencies (as root)
+# hadolint ignore=DL3008
 RUN apt-get update && \
   apt-get install -y --no-install-recommends ${LOCAL_TOOLS} && \
   rm -rf /var/lib/apt/lists/*
