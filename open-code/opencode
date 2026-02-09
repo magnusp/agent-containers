@@ -98,8 +98,9 @@ cleanup() {
   fi
   CLEANED_UP=true
   echo ""
-  echo "Tearing down ${PROJECT_NAME}..."
-  docker compose -f "${COMPOSE_FILE}" down
+  echo "Tearing down ${PROJECT_NAME} in the background..."
+  docker compose -f "${COMPOSE_FILE}" down &>/dev/null &
+  disown
 }
 trap cleanup EXIT
 

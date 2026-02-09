@@ -51,6 +51,7 @@ services:
     ports:
       - "${OPENCODE_PORT:-4096}:${OPENCODE_PORT:-4096}"
 
+    stop_grace_period: 2s
     restart: "no"
     depends_on:
       opencode-init:
