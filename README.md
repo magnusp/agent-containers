@@ -1,5 +1,7 @@
 # agent-containers
 
+[![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/magnusp/agent-containers/badge)](https://api.securityscorecards.dev/projects/github.com/magnusp/agent-containers)
+
 Containerised [OpenCode](https://opencode.ai/) with a Docker Compose stack that
 pairs a headless web server with an interactive TUI. Your current working
 directory is mounted into the container so the agent can work on any local
