@@ -126,6 +126,7 @@ echo ""
 
 # Wait for any previous teardown to complete (network cleanup race condition)
 NETWORK_NAME="${PROJECT_NAME}_default"
+# shellcheck disable=SC2034
 for i in {1..20}; do
   if docker network inspect "${NETWORK_NAME}" >/dev/null 2>&1; then
     # Network still exists from previous teardown, wait for it to be removed
