@@ -79,14 +79,29 @@ export HOST_UID HOST_GID
 HOST_UID="$(id -u)"
 HOST_GID="$(id -g)"
 
-# Build the base image if it doesn't exist (required by the open-code Dockerfile)
-if ! docker image inspect agent-base >/dev/null 2>&1; then
-  echo "Building base image (first time only)..."
-  docker build \
+# Compute SHA256 of base Dockerfile to detect changes
+BASE_DOCKERFILE="${SCRIPT_DIR}/../base/Dockerfile"
+DOCKERFILE_SHA=$(sha256sum "${BASE_DOCKERFILE}" | cut -d' ' -f1)
+
+# Check if base image exists and has matching SHA label
+NEEDS_BUILD=false
+if docker image inspect agent-base >/dev/null 2>&1; then
+  CURRENT_SHA=$(docker image inspect agent-base --format '{{index .Config.Labels "dockerfile.sha256"}}' 2>/dev/null || echo "")
+  if [[ "${CURRENT_SHA}" != "${DOCKERFILE_SHA}" ]]; then
+    NEEDS_BUILD=true
+  fi
+else
+  NEEDS_BUILD=true
+fi
+
+# Build base image only if Dockerfile has changed or image doesn't exist
+if [[ "${NEEDS_BUILD}" == "true" ]]; then
+  docker build -q \
     --build-arg HOST_UID="${HOST_UID}" \
     --build-arg HOST_GID="${HOST_GID}" \
+    --label "dockerfile.sha256=${DOCKERFILE_SHA}" \
     -t agent-base \
-    -f "${SCRIPT_DIR}/../base/Dockerfile" "${SCRIPT_DIR}/../base"
+    -f "${BASE_DOCKERFILE}" "${SCRIPT_DIR}/../base" >/dev/null
 fi
 
 # Track whether cleanup has been performed to avoid double teardown
@@ -108,6 +123,17 @@ echo "Project:  ${PROJECT_DIR}"
 echo "Stack:    ${PROJECT_NAME}"
 echo "Web UI:   http://localhost:${OPENCODE_PORT}"
 echo ""
+
+# Wait for any previous teardown to complete (network cleanup race condition)
+NETWORK_NAME="${PROJECT_NAME}_default"
+for i in {1..20}; do
+  if docker network inspect "${NETWORK_NAME}" >/dev/null 2>&1; then
+    # Network still exists from previous teardown, wait for it to be removed
+    sleep 0.1
+  else
+    break
+  fi
+done
 
 # Start the web server detached and wait for it to be healthy
 docker compose -f "${COMPOSE_FILE}" up -d --build --wait opencode-web
