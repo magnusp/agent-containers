@@ -8,13 +8,15 @@ Runtime hooks execute when agent container environments start up. This allows yo
 
 Hooks are stored in two locations and execute in this order:
 
-1. **Global hooks**: `~/.config/opencode/hooks/startup/`
+1. **Global hooks**: `~/.config/agent-containers/hooks/startup/`
    - Apply to all projects
    - Ideal for user preferences and standard tooling
 
-2. **Per-project hooks**: `.opencode/hooks/startup/`
+2. **Per-project hooks**: `.agent-containers/hooks/startup/`
    - Apply only to the current project
    - Can be version-controlled for team sharing
+
+> **Note**: Applications built from `agent-base` (e.g., OpenCode) may choose their own namespace for branding. The hook execution mechanism remains the same, but paths are passed as parameters to the hook runner.
 
 ## Quick Start
 
@@ -22,17 +24,17 @@ Hooks are stored in two locations and execute in this order:
 
 ```bash
 # For global hooks (all projects)
-mkdir -p ~/.config/opencode/hooks/startup
+mkdir -p ~/.config/agent-containers/hooks/startup
 
 # For per-project hooks (this project only)
-mkdir -p .opencode/hooks/startup
+mkdir -p .agent-containers/hooks/startup
 ```
 
 **2. Create a hook script:**
 
 ```bash
 # Example: Install Node.js CLI tools
-cat > ~/.config/opencode/hooks/startup/10-npm-tools.sh << 'EOF'
+cat > ~/.config/agent-containers/hooks/startup/10-npm-tools.sh << 'EOF'
 #!/bin/bash
 set -e
 
@@ -40,17 +42,12 @@ echo "Installing npm global packages..."
 npm install -g typescript prettier eslint
 EOF
 
-chmod +x ~/.config/opencode/hooks/startup/10-npm-tools.sh
+chmod +x ~/.config/agent-containers/hooks/startup/10-npm-tools.sh
 ```
 
-**3. Launch OpenCode:**
+**3. Launch your agent environment:**
 
-```bash
-cd /path/to/your/project
-opencode
-```
-
-The hooks will execute automatically before the OpenCode web server starts.
+Hooks will execute automatically during container startup. Refer to your specific agent's documentation for launch instructions.
 
 ## Hook Requirements
 
@@ -224,15 +221,15 @@ echo "Rust installed"
 ## Troubleshooting
 
 **Hook not executing:**
-1. Check file is in correct directory: `~/.config/opencode/hooks/startup/` or `.opencode/hooks/startup/`
+1. Check file is in correct directory: `~/.config/agent-containers/hooks/startup/` or `.agent-containers/hooks/startup/`
 2. Verify executable: `chmod +x hook.sh`
 3. Check filename matches pattern: `[0-9][0-9]-*.sh`
-4. View logs: `docker compose logs opencode-hooks`
+4. View logs with your container/compose stack (e.g., `docker compose logs <hooks-service>`)
 
 **Hook fails:**
 - Hooks use fail-fast behavior (`set -e`)
 - If any hook fails, the environment won't start
-- Check logs: `docker compose logs opencode-hooks`
+- Check logs with your container/compose stack
 - Test hook locally: `bash -e hook-file.sh`
 
 **Tools not in PATH:**
@@ -251,13 +248,13 @@ echo "Rust installed"
 
 ```
 # Global (all projects)
-~/.config/opencode/hooks/startup/
+~/.config/agent-containers/hooks/startup/
 ├── 10-npm-globals.sh      # npm packages
 ├── 20-python-tools.sh     # Python packages
 └── 30-git-config.sh       # Git configuration
 
 # Per-project (this project only)  
-.opencode/hooks/startup/
+.agent-containers/hooks/startup/
 ├── 10-project-tools.sh    # Project-specific tools
 └── 20-env-setup.sh        # Project environment
 ```
@@ -268,6 +265,5 @@ Execution order:
 
 ## See Also
 
-- [OpenCode Examples](../../open-code/examples/) - Ready-to-use hook examples
-- [OpenCode README](../../open-code/README.md) - OpenCode documentation
-- [AGENTS.md](../../AGENTS.md) - Developer guidance
+- [Example Hooks](../examples/) - Ready-to-use hook examples
+- [AGENTS.md](../AGENTS.md) - Developer guidance for this repository

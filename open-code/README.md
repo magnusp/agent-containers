@@ -122,6 +122,8 @@ exec docker run --rm --tty --interactive \
 
 You can customize the container environment by adding **runtime startup hooks** that execute when the compose environment starts. Hooks can install tools, configure settings, or run initialization scripts without rebuilding the container image.
 
+> **Note**: OpenCode uses `.opencode` as its namespace for hooks and configuration. The base image provides [generic hook documentation](../base/hooks/README.md) using `.agent-containers` paths, but OpenCode-specific paths are shown below.
+
 ### Quick Start
 
 **1. Create hook directory:**
@@ -209,7 +211,7 @@ set -e
 pip3 install --user black pylint pytest
 ```
 
-📁 **More examples**: See [`examples/`](examples/) directory with ready-to-use hooks.
+📁 **More examples**: See [`../base/examples/`](../base/examples/) directory with ready-to-use hooks.
 
 ### Hook Requirements
 
@@ -233,8 +235,8 @@ pip3 install --user black pylint pytest
 ### Documentation
 
 - **Complete guide**: [`../base/hooks/README.md`](../base/hooks/README.md) - Detailed documentation with examples
-- **Example library**: [`examples/`](examples/) - Production-ready hooks
-- **Example README**: [`examples/README.md`](examples/README.md) - How to use examples
+- **Example library**: [`../base/examples/`](../base/examples/) - Production-ready hooks
+- **Example README**: [`../base/examples/README.md`](../base/examples/README.md) - How to use examples
 
 ## References
 

@@ -1,23 +1,23 @@
 # Example Runtime Hooks
 
-These examples demonstrate common use cases for runtime startup hooks. Copy them to your hooks directory and customize as needed.
+These examples demonstrate common use cases for runtime startup hooks in containers built from the `agent-base` image. Copy them to your hooks directory and customize as needed.
 
 ## How to Use
 
 **Copy to global hooks** (apply to all projects):
 
 ```bash
-mkdir -p ~/.config/opencode/hooks/startup
-cp open-code/examples/10-npm-globals.sh ~/.config/opencode/hooks/startup/
-chmod +x ~/.config/opencode/hooks/startup/*.sh
+mkdir -p ~/.config/agent-containers/hooks/startup
+cp /path/to/agent-containers/base/examples/10-npm-globals.sh ~/.config/agent-containers/hooks/startup/
+chmod +x ~/.config/agent-containers/hooks/startup/*.sh
 ```
 
 **Copy to project hooks** (apply to one project only):
 
 ```bash
-mkdir -p .opencode/hooks/startup
-cp /path/to/agent-containers/open-code/examples/40-kubectl.sh .opencode/hooks/startup/
-chmod +x .opencode/hooks/startup/*.sh
+mkdir -p .agent-containers/hooks/startup
+cp /path/to/agent-containers/base/examples/30-git-config.sh .agent-containers/hooks/startup/
+chmod +x .agent-containers/hooks/startup/*.sh
 ```
 
 ## Available Examples
@@ -66,8 +66,8 @@ git config --global user.email "your.actual@email.com"
 ## Execution Order
 
 Hooks run in numeric order:
-1. Global hooks (from `~/.config/opencode/hooks/startup/`)
-2. Project hooks (from `.opencode/hooks/startup/`)
+1. Global hooks (from `~/.config/agent-containers/hooks/startup/`)
+2. Project hooks (from `.agent-containers/hooks/startup/`)
 
 Within each location, numeric prefixes control order (10, 20, 30...).
 
@@ -81,5 +81,4 @@ Within each location, numeric prefixes control order (10, 20, 30...).
 
 ## See Also
 
-- [Hooks Documentation](../../base/hooks/README.md) - Complete guide
-- [OpenCode README](../README.md) - Main project documentation
+- [Hooks Documentation](../hooks/README.md) - Complete hooks guide
