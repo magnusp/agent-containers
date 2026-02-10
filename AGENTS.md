@@ -25,12 +25,12 @@ This file provides guidance to AI coding agents when working with code in this r
 ## Customization Hooks System
 - Runtime startup hooks execute when compose environment starts (before web/TUI launch)
 - Hook system is part of the base image and available to all agent containers
-- Base documentation uses `.agent-containers` namespace (generic default)
-- Applications choose their own namespace: OpenCode uses `.opencode` for branding consistency
-- Hook locations (using OpenCode as example):
-  - **Global**: `~/.config/opencode/hooks/startup/` (applies to all projects)
-  - **Per-project**: `.opencode/hooks/startup/` (project-specific, can be version-controlled)
-- Hook execution: Applications pass their chosen paths to `run-hooks.sh` (fully parameterized)
+- All agents use `.agent-containers` namespace for hooks (consistent across all implementations)
+- Hook locations:
+  - **Global**: `~/.config/agent-containers/hooks/startup/` (applies to all projects)
+  - **Per-project**: `.agent-containers/hooks/startup/` (project-specific, can be version-controlled)
+- Application-specific data uses separate namespaces (e.g., OpenCode uses `~/.config/opencode/` for UI state, settings, and auth tokens)
+- Hook execution: Applications pass hook paths to `run-hooks.sh` (fully parameterized base script)
 - Execution order: Global hooks run first, then per-project hooks
 - Naming: Use numeric prefix pattern `NN-description.sh` (e.g., `10-npm-tools.sh`, `20-config.sh`)
 - Requirements: Executable (`chmod +x`), shebang (`#!/bin/bash`), fail-fast (`set -e`)

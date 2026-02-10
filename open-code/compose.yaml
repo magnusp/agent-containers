@@ -22,6 +22,7 @@ x-common: &common
     - ${OPENCODE_CONFIG_DIR_HOST:-${HOME}/.config/opencode}:/home/node/.config/opencode
     - ${OPENCODE_STATE_DIR_HOST:-${HOME}/.local/state/opencode}:/home/node/.local/state/opencode
     - ${OPENCODE_DATA_DIR_HOST:-${HOME}/.local/share/opencode}:/home/node/.local/share/opencode
+    - ${AGENT_CONTAINERS_CONFIG_DIR_HOST:-${HOME}/.config/agent-containers}:/home/node/.config/agent-containers
   extra_hosts:
     - "host.docker.internal:host-gateway"
 
@@ -38,20 +39,21 @@ services:
     image: open-code
     user: root
     command: >
-      sh -c "mkdir -p /home/node/.config/opencode /home/node/.local/state/opencode /home/node/.local/share/opencode &&
-             chown node:node /home/node/.config/opencode /home/node/.local/state/opencode /home/node/.local/share/opencode"
+      sh -c "mkdir -p /home/node/.config/opencode /home/node/.local/state/opencode /home/node/.local/share/opencode /home/node/.config/agent-containers &&
+             chown node:node /home/node/.config/opencode /home/node/.local/state/opencode /home/node/.local/share/opencode /home/node/.config/agent-containers"
     volumes:
       - ${OPENCODE_CONFIG_DIR_HOST:-${HOME}/.config/opencode}:/home/node/.config/opencode
       - ${OPENCODE_STATE_DIR_HOST:-${HOME}/.local/state/opencode}:/home/node/.local/state/opencode
       - ${OPENCODE_DATA_DIR_HOST:-${HOME}/.local/share/opencode}:/home/node/.local/share/opencode
+      - ${AGENT_CONTAINERS_CONFIG_DIR_HOST:-${HOME}/.config/agent-containers}:/home/node/.config/agent-containers
 
   # Execute user hooks on startup
   opencode-hooks:
     <<: *common
     user: node
     command: >
-      sh -c "run-hooks.sh /home/node/.config/opencode/hooks/startup 'GLOBAL' &&
-             run-hooks.sh /app/.opencode/hooks/startup 'PROJECT'"
+      sh -c "run-hooks.sh /home/node/.config/agent-containers/hooks/startup 'GLOBAL' &&
+             run-hooks.sh /app/.agent-containers/hooks/startup 'PROJECT'"
     depends_on:
       opencode-init:
         condition: service_completed_successfully

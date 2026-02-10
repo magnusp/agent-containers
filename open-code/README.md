@@ -122,7 +122,7 @@ exec docker run --rm --tty --interactive \
 
 You can customize the container environment by adding **runtime startup hooks** that execute when the compose environment starts. Hooks can install tools, configure settings, or run initialization scripts without rebuilding the container image.
 
-> **Note**: OpenCode uses `.opencode` as its namespace for hooks and configuration. The base image provides [generic hook documentation](../base/hooks/README.md) using `.agent-containers` paths, but OpenCode-specific paths are shown below.
+> **Note**: Hooks are a base-image feature and use the `.agent-containers` namespace (shared across all agent containers). OpenCode-specific configuration (settings, UI state, auth tokens) uses the `.opencode` namespace in XDG directories. See the [base hook documentation](../base/hooks/README.md) for complete details.
 
 ### Quick Start
 
@@ -130,17 +130,17 @@ You can customize the container environment by adding **runtime startup hooks** 
 
 ```bash
 # For global hooks (all projects)
-mkdir -p ~/.config/opencode/hooks/startup
+mkdir -p ~/.config/agent-containers/hooks/startup
 
 # For per-project hooks (this project only)
-mkdir -p .opencode/hooks/startup
+mkdir -p .agent-containers/hooks/startup
 ```
 
 **2. Add a hook script:**
 
 ```bash
 # Example: Install TypeScript tools
-cat > ~/.config/opencode/hooks/startup/10-npm-tools.sh << 'EOF'
+cat > ~/.config/agent-containers/hooks/startup/10-npm-tools.sh << 'EOF'
 #!/bin/bash
 set -e
 echo "Installing npm packages..."
@@ -148,7 +148,7 @@ npm install -g typescript prettier eslint
 echo "✓ npm packages installed"
 EOF
 
-chmod +x ~/.config/opencode/hooks/startup/10-npm-tools.sh
+chmod +x ~/.config/agent-containers/hooks/startup/10-npm-tools.sh
 ```
 
 **3. Launch OpenCode** (hooks run automatically):
