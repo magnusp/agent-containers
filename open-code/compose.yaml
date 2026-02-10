@@ -17,6 +17,9 @@ x-common: &common
       - HOST_UID=${HOST_UID:-1000}
       - HOST_GID=${HOST_GID:-1000}
   image: open-code
+  networks:
+    - default
+    - agent-containers-mcp-net
   volumes:
     - ${PROJECT_DIR:-.}:/app:rw
     - ${OPENCODE_CONFIG_DIR_HOST:-${HOME}/.config/opencode}:/home/node/.config/opencode
@@ -75,3 +78,8 @@ services:
     stdin_open: true
     tty: true
     restart: "no"
+
+networks:
+  agent-containers-mcp-net:
+    external: true
+    name: agent-containers-mcp-net

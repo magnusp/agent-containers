@@ -76,6 +76,9 @@ esac
 # Ensure the host directories exist with correct ownership
 mkdir -p "${OPENCODE_CONFIG_DIR_HOST}" "${OPENCODE_STATE_DIR_HOST}" "${OPENCODE_DATA_DIR_HOST}" "${AGENT_CONTAINERS_CONFIG_DIR_HOST}"
 
+# Create mcp-net if it doesn't exist
+docker network create agent-containers-mcp-net --driver bridge 2>/dev/null || true
+
 # Export build args for compose
 export HOST_UID HOST_GID
 HOST_UID="$(id -u)"
@@ -116,8 +119,8 @@ cleanup() {
   CLEANED_UP=true
   echo ""
   echo "Tearing down ${PROJECT_NAME} in the background..."
-  docker compose -f "${COMPOSE_FILE}" down &>/dev/null &
-  disown
+  #docker compose -f "${COMPOSE_FILE}" down &>/dev/null &
+  #disown
 }
 trap cleanup EXIT
 

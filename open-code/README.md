@@ -118,6 +118,27 @@ exec docker run --rm --tty --interactive \
   open-code "$@"
 ```
 
+## Networking
+
+The OpenCode compose stack connects to two networks:
+
+- **Default project network**: Isolated network for communication between `opencode-init`, `opencode-hooks`, `opencode-web`, and `opencode-tui` services (created automatically by compose)
+- **agent-containers-mcp-net**: Shared external network for communication with MCP (Model Context Protocol) servers or other services on the host
+
+The `mcp-net` network is automatically created by the `opencode` helper script if it doesn't exist. To connect other services to this network, add to their compose file:
+
+```yaml
+networks:
+  agent-containers-mcp-net:
+    external: true
+    name: agent-containers-mcp-net
+
+services:
+  your-service:
+    networks:
+      - agent-containers-mcp-net
+```
+
 ## Customization Hooks
 
 You can customize the container environment by adding **runtime startup hooks** that execute when the compose environment starts. Hooks can install tools, configure settings, or run initialization scripts without rebuilding the container image.
