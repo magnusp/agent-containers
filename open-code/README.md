@@ -118,6 +118,126 @@ exec docker run --rm --tty --interactive \
   open-code "$@"
 ```
 
+## Customization Hooks
+
+You can customize the container environment by adding **runtime startup hooks** that execute when the compose environment starts. Hooks can install tools, configure settings, or run initialization scripts without rebuilding the container image.
+
+> **Note**: Hooks are a base-image feature and use the `.agent-containers` namespace (shared across all agent containers). OpenCode-specific configuration (settings, UI state, auth tokens) uses the `.opencode` namespace in XDG directories. See the [base hook documentation](../base/hooks/README.md) for complete details.
+
+### Quick Start
+
+**1. Create hook directory:**
+
+```bash
+# For global hooks (all projects)
+mkdir -p ~/.config/agent-containers/hooks/startup
+
+# For per-project hooks (this project only)
+mkdir -p .agent-containers/hooks/startup
+```
+
+**2. Add a hook script:**
+
+```bash
+# Example: Install TypeScript tools
+cat > ~/.config/agent-containers/hooks/startup/10-npm-tools.sh << 'EOF'
+#!/bin/bash
+set -e
+echo "Installing npm packages..."
+npm install -g typescript prettier eslint
+echo "✓ npm packages installed"
+EOF
+
+chmod +x ~/.config/agent-containers/hooks/startup/10-npm-tools.sh
+```
+
+**3. Launch OpenCode** (hooks run automatically):
+
+```bash
+cd /path/to/your/project
+opencode
+```
+
+### How It Works
+
+- Hooks are mounted from your host filesystem (not copied into image)
+- They execute before the web server and TUI start
+- Global hooks run first, then per-project hooks
+- Numeric prefixes control execution order (10, 20, 30...)
+- Hooks run as the `node` user (can install npm, pip, download binaries)
+- ✅ **No rebuild needed** - changes take effect immediately
+
+### What Hooks Can Do
+
+**Install tools:**
+- npm/Bun packages globally
+- Python packages with pip
+- Rust/Cargo tools
+- Download binaries to `~/.local/bin/`
+
+**Configure environment:**
+- Git settings (`git config`)
+- Shell aliases
+- Environment variables
+
+**Cannot do:**
+- Install system packages with apt (no root access)
+- For system packages, use `LOCAL_TOOLS` in Makefile instead
+
+### Example Hooks
+
+**Install kubectl:**
+```bash
+#!/bin/bash
+set -e
+if command -v kubectl &> /dev/null; then exit 0; fi
+curl -LO "https://dl.k8s.io/release/v1.29.0/bin/linux/amd64/kubectl"
+install -m 0755 kubectl ~/.local/bin/kubectl && rm kubectl
+```
+
+**Configure git:**
+```bash
+#!/bin/bash
+set -e
+git config --global user.name "Your Name"
+git config --global user.email "you@example.com"
+git config --global alias.st "status"
+```
+
+**Install Python tools:**
+```bash
+#!/bin/bash
+set -e
+pip3 install --user black pylint pytest
+```
+
+📁 **More examples**: See [`../base/examples/`](../base/examples/) directory with ready-to-use hooks.
+
+### Hook Requirements
+
+- Executable: `chmod +x hook-file.sh`
+- Shebang: `#!/bin/bash`
+- Fail-fast: `set -e`
+- Naming: `NN-description.sh` (e.g., `10-tools.sh`, `20-config.sh`)
+
+### Best Practices
+
+1. **Check before install** (idempotency):
+   ```bash
+   if command -v tool &> /dev/null; then exit 0; fi
+   ```
+
+2. **Log progress**: Echo what's happening
+3. **Version pin**: Specify exact versions
+4. **Clean up**: Remove temporary files
+5. **Use gaps in numbering**: 10, 20, 30 (easier to insert later)
+
+### Documentation
+
+- **Complete guide**: [`../base/hooks/README.md`](../base/hooks/README.md) - Detailed documentation with examples
+- **Example library**: [`../base/examples/`](../base/examples/) - Production-ready hooks
+- **Example README**: [`../base/examples/README.md`](../base/examples/README.md) - How to use examples
+
 ## References
 
 * [Documentation](https://opencode.ai/docs)

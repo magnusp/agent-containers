@@ -40,6 +40,8 @@ export OPENCODE_STATE_DIR_HOST
 OPENCODE_STATE_DIR_HOST="${XDG_STATE_HOME:-${HOME}/.local/state}/opencode"
 export OPENCODE_DATA_DIR_HOST
 OPENCODE_DATA_DIR_HOST="${XDG_DATA_HOME:-${HOME}/.local/share}/opencode"
+export AGENT_CONTAINERS_CONFIG_DIR_HOST
+AGENT_CONTAINERS_CONFIG_DIR_HOST="${XDG_CONFIG_HOME:-${HOME}/.config}/agent-containers"
 
 COMMAND="${1:-up}"
 
@@ -72,7 +74,7 @@ case "${COMMAND}" in
 esac
 
 # Ensure the host directories exist with correct ownership
-mkdir -p "${OPENCODE_CONFIG_DIR_HOST}" "${OPENCODE_STATE_DIR_HOST}" "${OPENCODE_DATA_DIR_HOST}"
+mkdir -p "${OPENCODE_CONFIG_DIR_HOST}" "${OPENCODE_STATE_DIR_HOST}" "${OPENCODE_DATA_DIR_HOST}" "${AGENT_CONTAINERS_CONFIG_DIR_HOST}"
 
 # Export build args for compose
 export HOST_UID HOST_GID

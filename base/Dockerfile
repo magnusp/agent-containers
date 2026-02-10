@@ -19,6 +19,9 @@ COPY --from=oven/bun@sha256:856da45d07aeb62eb38ea3e7f9e1794c0143a4ff63efb00e6c44
 # Create the bunx symlink (standard practice)
 RUN ln -s /usr/local/bin/bun /usr/local/bin/bunx
 
+# Copy hook execution wrapper script for runtime customization
+COPY --chmod=755 run-hooks.sh /usr/local/bin/run-hooks.sh
+
 # 2. Configure the existing 'node' user
 # The node image usually creates the node user. We ensure it owns the app dir.
 WORKDIR /app
