@@ -45,6 +45,17 @@ services:
       - ${OPENCODE_STATE_DIR_HOST:-${HOME}/.local/state/opencode}:/home/node/.local/state/opencode
       - ${OPENCODE_DATA_DIR_HOST:-${HOME}/.local/share/opencode}:/home/node/.local/share/opencode
 
+  # Execute user hooks on startup
+  opencode-hooks:
+    <<: *common
+    user: node
+    command: >
+      sh -c "run-hooks.sh /home/node/.config/opencode/hooks/startup 'GLOBAL' &&
+             run-hooks.sh /app/.opencode/hooks/startup 'PROJECT'"
+    depends_on:
+      opencode-init:
+        condition: service_completed_successfully
+
   opencode-web:
     <<: *common
     command: ["opencode", "web", "--port", "${OPENCODE_PORT:-4096}", "--hostname", "0.0.0.0"]
@@ -53,7 +64,7 @@ services:
     stop_grace_period: 2s
     restart: "no"
     depends_on:
-      opencode-init:
+      opencode-hooks:
         condition: service_completed_successfully
 
   opencode-tui:
